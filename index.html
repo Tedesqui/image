@@ -3,160 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Pet Virtual em RA (Sem Marcador)</title>
-    
-    <!-- A-Frame é a única biblioteca necessária para WebXR -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-
+    <title>Gerador Inteligente para a Mega-Sena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
         }
-
-        /* Estilo para a sobreposição de instruções e o botão de início */
-        .overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 10;
+        .number-circle {
+            width: 70px;
+            height: 70px;
+            animation: pop-in 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            opacity: 0;
+            transform: scale(0.5);
         }
-
-        #instructions {
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            font-size: 16px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            max-width: 400px;
-        }
-
-        #enter-ar-btn {
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            background-color: #007AFF;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        #enter-ar-btn:hover {
-            background-color: #0056b3;
-        }
-
-        /* Oculta o botão padrão do A-Frame para evitar confusão */
-        .a-enter-ar-button {
-            display: none !important;
+        @keyframes pop-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
     </style>
 </head>
-<body style="margin : 0px; overflow: hidden;">
-    
-    <!-- Sobreposição com instruções e botão de início -->
-    <div id="overlay-ui" class="overlay">
-        <div id="instructions">
-            Clique em 'Iniciar RA' para começar.
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 max-w-lg w-full text-center">
+        
+        <h1 class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">Gerador Inteligente Mega-Sena</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Gere 6 números com base nas estatísticas dos que mais saíram na história do sorteio.</p>
+
+        <div id="numbers-container" class="flex flex-wrap justify-center gap-4 my-8 min-h-[80px]">
+            <!-- Os números gerados aparecerão aqui -->
         </div>
-        <button id="enter-ar-btn">Iniciar RA</button>
+
+        <button id="generate-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500 dark:focus:ring-green-400">
+            🍀 Gerar Números da Sorte
+        </button>
+
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-6">
+            Este gerador utiliza um sistema de pesos baseado nos 15 números mais sorteados para aumentar a probabilidade de seleção, mas não garante nenhum resultado. Jogue com responsabilidade.
+        </p>
+
     </div>
-
-    <!-- A cena de Realidade Aumentada -->
-    <a-scene
-        webxr="requiredFeatures: hit-test,local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay-ui"
-        ar-hit-test="enabled: false" <!-- Desativado inicialmente -->
-        renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;">
-
-        <!-- Recursos a serem pré-carregados -->
-        <a-assets>
-            <img id="shadow-texture" src="https://raw.githubusercontent.com/aframevr/aframe/v1.0.4/examples/boilerplate/vr-logo/assets/radial-shadow-2.png">
-        </a-assets>
-
-        <!-- Câmera da cena -->
-        <a-camera position="0 1.6 0"></a-camera>
-
-        <!-- O nosso pet virtual. Inicialmente invisível. -->
-        <a-entity id="pet-container" position="0 -10 0" visible="false">
-            <!-- O corpo do nosso pet virtual -->
-            <a-entity id="pet-body" position="0 0.75 0" geometry="primitive: sphere; radius: 0.4;" material="color: #FFD700; metalness: 0.3; roughness: 0.4;">
-                
-                <a-sphere position="-0.15 0.15 0.3" radius="0.08" color="#222222"></a-sphere>
-                <a-sphere position="0.15 0.15 0.3" radius="0.08" color="#222222"></a-sphere>
-                <a-sphere position="-0.12 0.18 0.35" radius="0.03" color="white"></a-sphere>
-                <a-sphere position="0.18 0.18 0.35" radius="0.03" color="white"></a-sphere>
-
-                <a-animation attribute="position" to="0 0.85 0" dur="1500" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
-                <a-animation begin="click" attribute="position" from="0 0.75 0" to="0 1.5 0" dur="200" direction="alternate" repeat="1" easing="ease-out-quad"></a-animation>
-            </a-entity>
-
-            <!-- Sombra -->
-            <a-plane position="0 0.01 0" rotation="-90 0 0" width="1.5" height="1.5" material="src: #shadow-texture; transparent: true; opacity: 0.6;"></a-plane>
-        </a-entity>
-
-    </a-scene>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const sceneEl = document.querySelector('a-scene');
-            const enterArBtn = document.getElementById('enter-ar-btn');
-            const instructions = document.getElementById('instructions');
-            const petContainer = document.getElementById('pet-container');
-            let petPlaced = false;
+            const generateBtn = document.getElementById('generate-btn');
+            const numbersContainer = document.getElementById('numbers-container');
 
-            // Quando o utilizador clica no botão para iniciar a RA
-            enterArBtn.addEventListener('click', () => {
-                // Tenta entrar no modo de RA
-                sceneEl.enterVR(true);
-            });
-
-            // Quando a sessão de RA começa com sucesso
-            sceneEl.addEventListener('enter-vr', () => {
-                // Esconde o botão e atualiza as instruções
-                enterArBtn.style.display = 'none';
-                instructions.textContent = 'Mova o telemóvel para encontrar uma superfície.';
-                // Ativa o hit-test apenas depois de entrar em RA
-                sceneEl.setAttribute('ar-hit-test', 'enabled', true);
-            });
-
-            // Quando a sessão de RA termina
-             sceneEl.addEventListener('exit-vr', () => {
-                // Mostra o botão e as instruções iniciais novamente
-                enterArBtn.style.display = 'block';
-                instructions.textContent = "Clique em 'Iniciar RA' para começar.";
-                petContainer.setAttribute('visible', 'false');
-                petContainer.setAttribute('position', '0 -10 0');
-                petPlaced = false;
-                sceneEl.setAttribute('ar-hit-test', 'enabled', false);
-            });
-
-            // Quando o utilizador toca no ecrã para colocar o pet
-            sceneEl.addEventListener('ar-hit-test-select-start', (event) => {
-                if (petPlaced) return;
-
-                const hitPoint = event.detail.intersection.point;
-                petContainer.setAttribute('position', hitPoint);
-                petContainer.setAttribute('visible', 'true');
+            // Fonte de dados: Números historicamente mais sorteados na Mega-Sena.
+            // Esta lista pode ser atualizada com dados mais recentes.
+            const mostFrequentNumbers = [10, 53, 5, 42, 37, 33, 23, 34, 4, 24, 41, 17, 30, 51, 54];
+            
+            // Função para criar um "pool" de números com pesos
+            function createWeightedPool() {
+                const pool = [];
                 
-                petPlaced = true;
-                instructions.textContent = 'Toque no seu pet para o fazer pular!';
+                // Adiciona todos os números de 1 a 60 ao pool uma vez (peso base)
+                for (let i = 1; i <= 60; i++) {
+                    pool.push(i);
+                }
+
+                // Adiciona os números mais frequentes mais vezes para aumentar sua probabilidade
+                // Damos a eles um "peso" extra de 4, totalizando 5 aparições no pool.
+                mostFrequentNumbers.forEach(num => {
+                    for (let i = 0; i < 4; i++) {
+                        pool.push(num);
+                    }
+                });
+
+                return pool;
+            }
+
+            // Função para gerar 6 números únicos a partir do pool
+            function generateUniqueNumbers(pool) {
+                const selectedNumbers = new Set();
+                
+                while (selectedNumbers.size < 6) {
+                    const randomIndex = Math.floor(Math.random() * pool.length);
+                    const number = pool[randomIndex];
+                    selectedNumbers.add(number);
+                }
+
+                // Converte o Set para um Array e ordena
+                return Array.from(selectedNumbers).sort((a, b) => a - b);
+            }
+
+            // Função para exibir os números na tela com animação
+            function displayNumbers(numbers) {
+                numbersContainer.innerHTML = ''; // Limpa os números anteriores
+                numbers.forEach((number, index) => {
+                    const circle = document.createElement('div');
+                    circle.className = 'number-circle bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-3xl font-bold rounded-full flex items-center justify-center shadow-md';
+                    circle.textContent = number.toString().padStart(2, '0');
+                    circle.style.animationDelay = `${index * 100}ms`; // Efeito cascata na animação
+                    numbersContainer.appendChild(circle);
+                });
+            }
+            
+            // Event listener para o botão de gerar
+            generateBtn.addEventListener('click', () => {
+                const weightedPool = createWeightedPool();
+                const newNumbers = generateUniqueNumbers(weightedPool);
+                displayNumbers(newNumbers);
             });
 
-            // Adiciona um evento de clique ao corpo do pet
-            document.getElementById('pet-body').addEventListener('click', function (evt) {
-                console.log('Pet clicado! A iniciar animação de pulo.');
-                evt.stopPropagation();
-            });
+            // Gera um conjunto de números ao carregar a página
+            generateBtn.click();
         });
     </script>
 </body>
