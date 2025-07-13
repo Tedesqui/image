@@ -15,44 +15,67 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Estilo para a sobreposição de instruções */
-        #instructions {
+        /* Estilo para a sobreposição de instruções e o botão de início */
+        .overlay {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 400px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        #instructions {
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
             text-align: center;
             padding: 15px;
-            box-sizing: border-box;
-            z-index: 10;
             font-size: 16px;
             border-radius: 10px;
+            margin-bottom: 15px;
+            max-width: 400px;
         }
 
-        /* O botão de entrada em RA é estilizado automaticamente pelo A-Frame, mas podemos ajustar */
+        #enter-ar-btn {
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #007AFF;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #enter-ar-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Oculta o botão padrão do A-Frame para evitar confusão */
         .a-enter-ar-button {
-            bottom: 20px !important;
-            top: auto !important;
+            display: none !important;
         }
     </style>
 </head>
 <body style="margin : 0px; overflow: hidden;">
     
-    <!-- Sobreposição com instruções para o utilizador -->
-    <div id="instructions">
-        Mova o telemóvel para encontrar uma superfície.
+    <!-- Sobreposição com instruções e botão de início -->
+    <div id="overlay-ui" class="overlay">
+        <div id="instructions">
+            Clique em 'Iniciar RA' para começar.
+        </div>
+        <button id="enter-ar-btn">Iniciar RA</button>
     </div>
 
     <!-- A cena de Realidade Aumentada -->
-    <!-- `webxr` ativa o modo de RA sem marcadores -->
-    <!-- `ar-hit-test` permite encontrar superfícies no mundo real -->
     <a-scene
-        webxr="requiredFeatures: hit-test,local-floor; optionalFeatures: dom-overlay; overlayElement: #instructions"
-        ar-hit-test="enabled: true"
+        webxr="requiredFeatures: hit-test,local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay-ui"
+        ar-hit-test="enabled: false" <!-- Desativado inicialmente -->
         renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;">
 
         <!-- Recursos a serem pré-carregados -->
@@ -63,48 +86,21 @@
         <!-- Câmera da cena -->
         <a-camera position="0 1.6 0"></a-camera>
 
-        <!-- O nosso pet virtual. Inicialmente invisível e fora da vista. -->
-        <!-- Envolvemos o pet e a sombra numa entidade pai para movê-los juntos -->
+        <!-- O nosso pet virtual. Inicialmente invisível. -->
         <a-entity id="pet-container" position="0 -10 0" visible="false">
-            <!-- O corpo do nosso pet virtual (uma esfera) -->
+            <!-- O corpo do nosso pet virtual -->
             <a-entity id="pet-body" position="0 0.75 0" geometry="primitive: sphere; radius: 0.4;" material="color: #FFD700; metalness: 0.3; roughness: 0.4;">
                 
-                <!-- Olho esquerdo -->
                 <a-sphere position="-0.15 0.15 0.3" radius="0.08" color="#222222"></a-sphere>
-                
-                <!-- Olho direito -->
                 <a-sphere position="0.15 0.15 0.3" radius="0.08" color="#222222"></a-sphere>
-
-                <!-- Brilho no olho esquerdo -->
                 <a-sphere position="-0.12 0.18 0.35" radius="0.03" color="white"></a-sphere>
-
-                <!-- Brilho no olho direito -->
                 <a-sphere position="0.18 0.18 0.35" radius="0.03" color="white"></a-sphere>
 
-                <!-- Animação de flutuação contínua -->
-                <a-animation
-                    attribute="position"
-                    to="0 0.85 0"
-                    dur="1500"
-                    direction="alternate"
-                    repeat="indefinite"
-                    easing="ease-in-out-sine">
-                </a-animation>
-
-                <!-- Animação de pulo (ativada ao clicar) -->
-                <a-animation
-                    begin="click"
-                    attribute="position"
-                    from="0 0.75 0"
-                    to="0 1.5 0"
-                    dur="200"
-                    direction="alternate"
-                    repeat="1"
-                    easing="ease-out-quad">
-                </a-animation>
+                <a-animation attribute="position" to="0 0.85 0" dur="1500" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
+                <a-animation begin="click" attribute="position" from="0 0.75 0" to="0 1.5 0" dur="200" direction="alternate" repeat="1" easing="ease-out-quad"></a-animation>
             </a-entity>
 
-            <!-- Uma sombra simples para dar profundidade -->
+            <!-- Sombra -->
             <a-plane position="0 0.01 0" rotation="-90 0 0" width="1.5" height="1.5" material="src: #shadow-texture; transparent: true; opacity: 0.6;"></a-plane>
         </a-entity>
 
@@ -113,34 +109,52 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sceneEl = document.querySelector('a-scene');
-            const petContainer = document.getElementById('pet-container');
+            const enterArBtn = document.getElementById('enter-ar-btn');
             const instructions = document.getElementById('instructions');
+            const petContainer = document.getElementById('pet-container');
             let petPlaced = false;
 
-            // Quando o utilizador toca no ecrã
-            sceneEl.addEventListener('click', (event) => {
-                // Se já colocámos o pet, não fazemos nada
+            // Quando o utilizador clica no botão para iniciar a RA
+            enterArBtn.addEventListener('click', () => {
+                // Tenta entrar no modo de RA
+                sceneEl.enterVR(true);
+            });
+
+            // Quando a sessão de RA começa com sucesso
+            sceneEl.addEventListener('enter-vr', () => {
+                // Esconde o botão e atualiza as instruções
+                enterArBtn.style.display = 'none';
+                instructions.textContent = 'Mova o telemóvel para encontrar uma superfície.';
+                // Ativa o hit-test apenas depois de entrar em RA
+                sceneEl.setAttribute('ar-hit-test', 'enabled', true);
+            });
+
+            // Quando a sessão de RA termina
+             sceneEl.addEventListener('exit-vr', () => {
+                // Mostra o botão e as instruções iniciais novamente
+                enterArBtn.style.display = 'block';
+                instructions.textContent = "Clique em 'Iniciar RA' para começar.";
+                petContainer.setAttribute('visible', 'false');
+                petContainer.setAttribute('position', '0 -10 0');
+                petPlaced = false;
+                sceneEl.setAttribute('ar-hit-test', 'enabled', false);
+            });
+
+            // Quando o utilizador toca no ecrã para colocar o pet
+            sceneEl.addEventListener('ar-hit-test-select-start', (event) => {
                 if (petPlaced) return;
 
-                // `ar-hit-test` dispara um evento com os resultados
-                // Usamos o primeiro resultado para obter a posição
-                const hitTestResults = event.detail.intersection;
-                if (hitTestResults) {
-                    const hitPoint = hitTestResults.point;
-                    
-                    // Posiciona o container do pet no ponto onde o utilizador tocou
-                    petContainer.setAttribute('position', hitPoint);
-                    petContainer.setAttribute('visible', 'true');
-                    
-                    petPlaced = true;
-                    instructions.textContent = 'Toque no seu pet para o fazer pular!';
-                }
+                const hitPoint = event.detail.intersection.point;
+                petContainer.setAttribute('position', hitPoint);
+                petContainer.setAttribute('visible', 'true');
+                
+                petPlaced = true;
+                instructions.textContent = 'Toque no seu pet para o fazer pular!';
             });
 
             // Adiciona um evento de clique ao corpo do pet
             document.getElementById('pet-body').addEventListener('click', function (evt) {
                 console.log('Pet clicado! A iniciar animação de pulo.');
-                // Impede que o clique se propague para a cena, para não tentar colocar o pet novamente
                 evt.stopPropagation();
             });
         });
